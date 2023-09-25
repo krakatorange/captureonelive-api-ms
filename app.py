@@ -42,7 +42,7 @@ def get_images():
         images_urls = [variant["thumbnails"]["medium"]["url"] for variant in data["variants"]]
 
         # return the urls
-        return jsonify({ "image_urls": images_urls })
+        return jsonify({ "image_urls": images_urls, "eventId": eventId, "status": status })
     except Exception as err:
         return jsonify({ "msg" : str(err) })
 
