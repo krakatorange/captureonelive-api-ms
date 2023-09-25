@@ -1,28 +1,38 @@
-import requests, json, os
+import requests, json, os, uvicorn, secrets
 
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, HTTPException, Security, status
+from pydantic import BaseModel
+from typing import Union
+from utils import get_api_key, get_generator_api_key
+from dotenv import load_dotenv
 
-app = Flask(__name__)
-env_config = os.getenv("APP_SETTINGS", "config.DevelopmentConfig")
-app.config.from_object(env_config)
-host = app.config.get("HOST")
+load_dotenv()
+
+app = FastAPI()
+host = os.getenv("HOST")
+
+print(host)
+
+class ImageRequest(BaseModel):
+    url: str
+
+class UserAPIKey(BaseModel):
+    userId: str
 
 # generate access token dynamically
 def get_access_token(session_uuid):
-    SESSION_URL = f"https://live.captureone.com/api/v1/session/establish/{session_uuid}/"
-    data = {"cloud_session_uuid":f"{session_uuid}"}
+    SESSION_URL = f'https://live.captureone.com/api/v1/session/establish/{ session_uuid }/'
+    data = { "cloud_session_uuid": f'{ session_uuid }' }
     response = requests.post(SESSION_URL, json=data)
     auth_data = json.loads(response.text)
 
     return auth_data["access_token"]
 
-@app.route("/get_images", methods = ['POST'])
-def get_images():
+@app.post("/get_images")
+async def get_images(imageRequest: ImageRequest, api_key: str = Security(get_api_key)):
     try: 
         # Get the url from request
-        url = request.get_json().get('url')
-        eventId = request.get_json().get('eventId')
-        status = request.get_json().get('status')
+        url = imageRequest.url
         session_uuid = url.split('/')[-1]
         access_token = get_access_token(session_uuid)
         headers = { "Authorization": f'Bearer { access_token }' }
@@ -42,9 +52,16 @@ def get_images():
         images_urls = [variant["thumbnails"]["medium"]["url"] for variant in data["variants"]]
 
         # return the urls
-        return jsonify({ "image_urls": images_urls, "eventId": eventId, "status": status })
+        return { "image_urls": images_urls }
     except Exception as err:
-        return jsonify({ "msg" : str(err) })
+        return { "msg" : str(err) }
+    
+@app.post("/generate_api_key")
+async def get_images(userAPIKey: UserAPIKey, api_key: str = Security(get_generator_api_key)):
+    userId = userAPIKey.userId
+    generated_key = secrets.token_urlsafe(16)
 
-if __name__ == '__main__':
-    app.run(host=host, port=8000, threaded=True)
+    return { "userId": userId, "API-KEY": generated_key }
+
+if __name__ == "__main__":
+    uvicorn.run(app, host=host, port=8000)

@@ -1,9 +1,11 @@
-requests
-python-dotenv
+requests==2.31.0
+python-dotenv==1.0.0
 click==7.1.2
-flask==1.1.2
+Flask==1.1.2
 gunicorn==20.0.4
 itsdangerous==1.1.0
-jinja2==2.11.2
-markupSafe==1.1.1
-werkzeug==1.0.1
+Jinja2==2.11.2
+MarkupSafe==1.1.1
+Werkzeug==1.0.1
+uvicorn==0.23.2
+fastapi==0.103.1
