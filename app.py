@@ -1,5 +1,4 @@
-import os
-import requests, json
+import requests, json, os
 
 from flask import Flask, request, jsonify
 
@@ -10,13 +9,9 @@ host = app.config.get("HOST")
 
 # generate access token dynamically
 def get_access_token(session_uuid):
-
     SESSION_URL = f"https://live.captureone.com/api/v1/session/establish/{session_uuid}/"
-
     data = {"cloud_session_uuid":f"{session_uuid}"}
-
     response = requests.post(SESSION_URL, json=data)
-
     auth_data = json.loads(response.text)
 
     return auth_data["access_token"]
@@ -24,19 +19,14 @@ def get_access_token(session_uuid):
 @app.route("/get_images", methods = ['POST'])
 def get_images():
     try: 
-        # Get the website from request
-        website = request.get_json().get('website')
-        session_uuid = website.split('/')[-1]
-
+        # Get the url from request
+        url = request.get_json().get('url')
+        eventId = request.get_json().get('eventId')
+        status = request.get_json().get('status')
+        session_uuid = url.split('/')[-1]
         access_token = get_access_token(session_uuid)
-
-        print(access_token)
-
-        headers = {
-        "Authorization": f"Bearer {access_token}"
-        }
-
-        data = {"cloud_session_uuid":session_uuid,"order_by":1}
+        headers = { "Authorization": f'Bearer { access_token }' }
+        data = { "cloud_session_uuid": session_uuid, "order_by": 1 }
 
          # API endpoint
         API_URL = "https://live.captureone.com/api/v1/search/state/"
@@ -52,10 +42,9 @@ def get_images():
         images_urls = [variant["thumbnails"]["medium"]["url"] for variant in data["variants"]]
 
         # return the urls
-        return jsonify({"image_urls": images_urls})
+        return jsonify({ "image_urls": images_urls })
     except Exception as err:
-        return jsonify({"msg" : str(err)})
-
+        return jsonify({ "msg" : str(err) })
 
 if __name__ == '__main__':
     app.run(host=host, port=8000, threaded=True)
