@@ -1,7 +1,12 @@
+import os
 import requests, json
+
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
+env_config = os.getenv("APP_SETTINGS", "config.DevelopmentConfig")
+app.config.from_object(env_config)
+host = app.config.get("HOST")
 
 # generate access token dynamically
 def get_access_token(session_uuid):
@@ -53,4 +58,4 @@ def get_images():
 
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=8000, threaded=True)
+    app.run(host=host, port=8000, threaded=True)
